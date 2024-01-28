@@ -37,6 +37,7 @@ from homeassistant.const import (
     UnitOfTemperature
 )
 
+from homeassistant.exceptions import PlatformNotReady
 from homeassistant.helpers.event import (async_track_state_change)
 from homeassistant.core import callback
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -122,9 +123,16 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
     uid = config.get(CONF_UID)
     
     _LOGGER.info('Adding Gree climate device "{}" to hass'.format(name))
-    async_add_devices([
-        GreeClimate(hass, name, ip_addr, port, mac_addr, timeout, target_temp_step, temp_sensor_entity_id, lights_entity_id, xfan_entity_id, health_entity_id, powersave_entity_id, sleep_entity_id, eightdegheat_entity_id, air_entity_id, hvac_modes, fan_modes, swing_modes, encryption_key, uid)
-    ])
+
+    try:
+        entity = GreeClimate(hass, name, ip_addr, port, mac_addr, timeout, target_temp_step, temp_sensor_entity_id, lights_entity_id, xfan_entity_id, health_entity_id, powersave_entity_id, sleep_entity_id, eightdegheat_entity_id, air_entity_id, hvac_modes, fan_modes, swing_modes, encryption_key, uid)
+        async_add_devices([entity])
+    except BaseException as ex:
+        raise PlatformNotReady('Could not add Gree climate device "{}" at "{}" ({}) to hass: {}'.format(name, ip_addr, mac_addr, ex))
+    except:
+        raise PlatformNotReady('Could not add Gree climate device "{}" at "{}" ({}) to hass.'.format(name, ip_addr, mac_addr))
+
+    _LOGGER.info('Added Gree climate device "{}" to hass'.format(name))
 
 class GreeClimate(ClimateEntity):
 
